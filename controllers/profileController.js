@@ -206,6 +206,50 @@ exports.deleteProfile = async (req, res) => {
   }
 };
 
+// exports.searchProfiles = async (req, res) => {
+//   try {
+//     const { q } = req.query;
+
+//     if (!q) {
+//       return res.status(400).json({
+//         status: "error",
+//         message: "Query parameter q is required"
+//       });
+//     }
+
+//     // reuse your pagination validation
+//     const page = Math.max(Number(req.query.page) || 1, 1);
+//     const limit = Math.min(Number(req.query.limit) || 10, 50);
+
+//     const result = await profileService.searchProfiles({
+//       q,
+//       page,
+//       limit
+//     });
+
+//     return res.status(200).json({
+//       status: "success",
+//       page: result.page,
+//       limit: result.limit,
+//       total: result.total,
+//       data: result.data
+//     });
+
+//   } catch (error) {
+//      if (error.message === "Unable to interpret query") {
+//       return res.status(400).json({
+//         status: "error",
+//         message: error.message
+//       });
+//     }
+
+//     return res.status(500).json({
+//       status: "error",
+//       message: "Internal server error"
+//     });
+//   }
+// };
+
 exports.searchProfiles = async (req, res) => {
   try {
     const { q } = req.query;
@@ -217,7 +261,6 @@ exports.searchProfiles = async (req, res) => {
       });
     }
 
-    // reuse your pagination validation
     const page = Math.max(Number(req.query.page) || 1, 1);
     const limit = Math.min(Number(req.query.limit) || 10, 50);
 
@@ -236,7 +279,10 @@ exports.searchProfiles = async (req, res) => {
     });
 
   } catch (error) {
-     if (error.message === "Unable to interpret query") {
+
+    console.error("SEARCH ERROR:", error); //  IMPORTANT FOR RAILWAY DEBUGGING
+
+    if (error.message === "Unable to interpret query") {
       return res.status(400).json({
         status: "error",
         message: error.message

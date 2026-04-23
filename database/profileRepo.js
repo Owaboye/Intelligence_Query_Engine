@@ -43,81 +43,180 @@ function findById(id) {
 }
 
 
-function getAll(filters = {}) {
-  // let query = "SELECT * FROM profiles WHERE 1=1";
-  let query = "FROM profiles WHERE 1=1";
+// function getAll(filters = {}) {
+//   // let query = "SELECT * FROM profiles WHERE 1=1";
+//   let query = "FROM profiles WHERE 1=1";
   
+//   const params = [];
+
+//   // Filtering
+
+//   if (filters.gender) {
+//     query += " AND LOWER(gender) = ?";
+//     params.push(filters.gender);
+//   }
+
+//   if (filters.country_id) {
+//     query += " AND LOWER(country_id) = LOWER(?)";
+//     params.push(filters.country_id);
+//   }
+
+//   if (filters.age_group) {
+//     query += " AND LOWER(age_group) = LOWER(?)";
+//     params.push(filters.age_group);
+//   }
+
+//   if (filters.min_age){
+//     query += " AND age >= ?";
+//     params.push(Number(filters.min_age))
+//   }
+
+//   if (filters.max_age){
+//     query += " AND age <= ?";
+//     params.push(Number(filters.max_age))
+//   }
+
+//   if (filters.min_gender_probability){
+//     query += " AND gender_probability >= ?";
+//     params.push(Number(filters.min_gender_probability)); 
+//   }
+
+//   if (filters.min_country_probabilit){
+//     query += " AND country_probability >= ?";
+//     params.push(Number(filters.min_country_probability));
+//   }
+
+//   // Sorting
+//   let sortBy = "created_at"; // default
+//   let order = "desc";        // default
+
+//   if (filters.sort_by && ALLOWED_SORT_FIELDS.includes(filters.sort_by)) {
+//     sortBy = filters.sort_by;
+//   }
+
+//   if (filters.order && ALLOWED_ORDER.includes(filters.order.toLowerCase())) {
+//     order = filters.order.toUpperCase();
+//   } else {
+//     order = order.toUpperCase(); // default DESC
+//   }
+
+//    // Count Query
+//   const countQuery = `SELECT COUNT(*) as total ${query}`;
+//   const total = db.prepare(countQuery).get(...params).total;
+
+//   // Paginate
+//   const page = Math.max(Number(filters.page) || 1, 1);
+//   const limit = Math.min(Number(filters.limit) || 10, 50);
+
+//   const offset = (page - 1) * limit;
+
+//   const total_pages = Math.ceil(total / limit);
+
+// //  query += ` ORDER BY ${sortBy} ${order} LIMIT ? OFFSET ?`;
+
+// //   const data = db.prepare(query).all(...params, limit, offset);
+
+//   const dataQuery = `
+//     SELECT * ${query}
+//     ORDER BY ${sortBy} ${order}
+//     LIMIT ? OFFSET ?
+//   `;
+
+//   const data = db.prepare(dataQuery).all(...params, limit, offset);
+
+//   return {
+//     page,
+//     limit,
+//     total,
+//     data
+//   };
+
+//   // const stmt = db.prepare(query);
+//   // return stmt.all(...params);
+// }
+
+
+function getAll(filters = {}) {
+
+  // ✅ FIX: correct SQL base
+  let baseQuery = "FROM profiles WHERE 1=1";
   const params = [];
 
-  // Filtering
+  // =========================
+  // FILTERING
+  // =========================
 
   if (filters.gender) {
-    query += " AND LOWER(gender) = ?";
+    baseQuery += " AND LOWER(gender) = LOWER(?)";
     params.push(filters.gender);
   }
 
   if (filters.country_id) {
-    query += " AND LOWER(country_id) = LOWER(?)";
+    baseQuery += " AND LOWER(country_id) = LOWER(?)";
     params.push(filters.country_id);
   }
 
   if (filters.age_group) {
-    query += " AND LOWER(age_group) = LOWER(?)";
+    baseQuery += " AND LOWER(age_group) = LOWER(?)";
     params.push(filters.age_group);
   }
 
-  if (filters.min_age){
-    query += " AND age >= ?";
-    params.push(Number(filters.min_age))
+  if (filters.min_age) {
+    baseQuery += " AND age >= ?";
+    params.push(Number(filters.min_age));
   }
 
-  if (filters.max_age){
-    query += " AND age <= ?";
-    params.push(Number(filters.max_age))
+  if (filters.max_age) {
+    baseQuery += " AND age <= ?";
+    params.push(Number(filters.max_age));
   }
 
-  if (filters.min_gender_probability){
-    query += " AND gender_probability >= ?";
-    params.push(Number(filters.min_gender_probability)); 
+  if (filters.min_gender_probability) {
+    baseQuery += " AND gender_probability >= ?";
+    params.push(Number(filters.min_gender_probability));
   }
 
-  if (filters.min_country_probabilit){
-    query += " AND country_probability >= ?";
+  if (filters.min_country_probability) {
+    baseQuery += " AND country_probability >= ?";
     params.push(Number(filters.min_country_probability));
   }
 
-  // Sorting
-  let sortBy = "created_at"; // default
-  let order = "desc";        // default
+  // =========================
+  // SORTING
+  // =========================
 
-  if (filters.sort_by && ALLOWED_SORT_FIELDS.includes(filters.sort_by)) {
+  let sortBy = "created_at";
+  let order = "desc";
+
+  if (ALLOWED_SORT_FIELDS.includes(filters.sort_by)) {
     sortBy = filters.sort_by;
   }
 
-  if (filters.order && ALLOWED_ORDER.includes(filters.order.toLowerCase())) {
+  if (ALLOWED_ORDER.includes(String(filters.order).toLowerCase())) {
     order = filters.order.toUpperCase();
-  } else {
-    order = order.toUpperCase(); // default DESC
   }
 
-   // Count Query
-  const countQuery = `SELECT COUNT(*) as total ${query}`;
+  // =========================
+  // COUNT QUERY
+  // =========================
+
+  const countQuery = `SELECT COUNT(*) as total ${baseQuery}`;
   const total = db.prepare(countQuery).get(...params).total;
 
-  // Paginate
+  // =========================
+  // PAGINATION
+  // =========================
+
   const page = Math.max(Number(filters.page) || 1, 1);
   const limit = Math.min(Number(filters.limit) || 10, 50);
-
   const offset = (page - 1) * limit;
 
-  const total_pages = Math.ceil(total / limit);
-
-//  query += ` ORDER BY ${sortBy} ${order} LIMIT ? OFFSET ?`;
-
-//   const data = db.prepare(query).all(...params, limit, offset);
+  // =========================
+  // DATA QUERY
+  // =========================
 
   const dataQuery = `
-    SELECT * ${query}
+    SELECT * ${baseQuery}
     ORDER BY ${sortBy} ${order}
     LIMIT ? OFFSET ?
   `;
@@ -130,10 +229,8 @@ function getAll(filters = {}) {
     total,
     data
   };
-
-  // const stmt = db.prepare(query);
-  // return stmt.all(...params);
 }
+
 
 function deleteProfile(id) {
   const stmt = db.prepare(`DELETE FROM profiles WHERE id = ?`);
