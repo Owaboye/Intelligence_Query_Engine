@@ -1,87 +1,94 @@
-# Backend Wizards — Stage 1
+# Profile Intelligence API — Stage 2 (Query Engine)
 
-# Profile Intelligence API
+A production-ready **Demographic Intelligence Query Engine** built with Node.js, Express, and SQLite.
 
-A RESTful API that builds and stores enriched user profiles by integrating multiple external data sources. The system processes a given name, derives demographic insights, persists the result, and exposes endpoints for retrieval, filtering, and deletion.
+This API allows clients (marketing teams, analysts, product teams) to:
+
+* Collect and store demographic profiles
+* Perform advanced filtering and segmentation
+* Sort and paginate large datasets
+* Query data using natural language
+
+---
+
+## 📌 Live API
+
+**Base URL**
+
+```
+https://your-app-url.up.railway.app
+```
 
 ---
 
-## Features
-* Integrates with 3 external APIs:
-  * Gender prediction
-  * Age estimation
-  * Nationality prediction
+## 📂 GitHub Repository
 
-* Applies business logic:
-  * Age group classification
-  * Most probable nationality selection
-
-* SQLite data persistence
-* Idempotent profile creation (no duplicates)
-* Filtering support (gender, country, age group)
-* Optimized API calls using parallel requests
-* Robust error handling with proper HTTP status codes
+```
+(https://github.com/Owaboye/Intelligence_Query_Engine.git)
+```
 
 ---
-## Tech Stack
+
+## Project Overview
+
+This project extends a basic profile API into a **Queryable Intelligence Engine**.
+
+It integrates external APIs to enrich user data and provides powerful querying capabilities over a structured dataset.
+
+---
+
+## ⚙️ Tech Stack
+
 * Node.js
 * Express.js
-* SQLite
+* SQLite (better-sqlite3)
 * Axios
-* UUID (v7)
-* CORS
----
-
-## Project Structure
-```
-src/
-│
-├── controllers/       # Handles request & response
-├── services/          # Business logic & API integration
-├── database/          # SQLite connection & queries
-├── routes/            # API route definitions
-├── index.js           # App entry point
-```
----
-
-## 🌐 External APIs Used
-* https://api.genderize.io
-* https://api.agify.io
-* https://api.nationalize.io
+* UUID v7
 
 ---
-## Setup Instructions
-### 1. Clone Repository
-```bash
-git clone https://github.com/Owaboye/Profile_Intelligence_API.git
-cd YOUR_REPO
-```
-### 2. Install Dependencies
 
-```bash
-npm install
-```
+## Database Schema
 
-### 3. Start Server
+The `profiles` table strictly follows the required structure:
 
-```bash
-node index.js
-```
+| Field               | Type    | Description                       |
+| ------------------- | ------- | --------------------------------- |
+| id                  | TEXT    | UUID v7 (Primary Key)             |
+| name                | TEXT    | Unique full name                  |
+| gender              | TEXT    | male / female                     |
+| gender_probability  | REAL    | Confidence score                  |
+| age                 | INTEGER | Exact age                         |
+| age_group           | TEXT    | child / teenager / adult / senior |
+| country_id          | TEXT    | ISO country code                  |
+| country_name        | TEXT    | Full country name                 |
+| country_probability | REAL    | Confidence score                  |
+| created_at          | TEXT    | ISO 8601 timestamp                |
 
-Server runs on:
+---
 
-```
-http://localhost:4000
-```
+## Data Seeding
+
+* Database seeded with **2026 profiles**
+* Seeding is **idempotent** (no duplicates)
+* Uses `name` as unique constraint
+
 ---
 
 ## API Endpoints
+
+---
 
 ### 1. Create Profile
 
 **POST** `/api/profiles`
 
-#### Request Body
+Creates a profile by calling external APIs:
+
+* Genderize
+* Agify
+* Nationalize
+
+#### Request
 
 ```json
 {
@@ -89,62 +96,121 @@ http://localhost:4000
 }
 ```
 
-#### Response (201)
+#### Response
 
 ```json
 {
   "status": "success",
-  "data": {
-    "id": "uuid",
-    "name": "ella",
-    "gender": "female",
-    "gender_probability": 0.99,
-    "sample_size": 1234,
-    "age": 46,
-    "age_group": "adult",
-    "country_id": "US",
-    "country_probability": 0.85,
-    "created_at": "2026-04-01T12:00:00Z"
-  }
-}
-```
-
-#### Duplicate Case (200)
-
-```json
-{
-  "status": "success",
-  "message": "Profile already exists",
-  "data": { ... }
+  "data": { ...profile }
 }
 ```
 
 ---
 
-### 2. Get All Profiles
+### 2. Get All Profiles (Advanced Querying)
 
 **GET** `/api/profiles`
 
-#### Optional Query Params
+#### Supported Filters
 
-* `gender`
-* `country_id`
-* `age_group`
+| Parameter               | Description                       |
+| ----------------------- | --------------------------------- |
+| gender                  | male / female                     |
+| age_group               | child / teenager / adult / senior |
+| country_id              | ISO code (NG, KE, etc.)           |
+| min_age                 | minimum age                       |
+| max_age                 | maximum age                       |
+| min_gender_probability  | minimum confidence                |
+| min_country_probability | minimum confidence                |
 
-Example:
+#### Example
 
 ```
-/api/profiles?gender=male&country_id=NG
+/api/profiles?gender=male&country_id=NG&min_age=25
 ```
+
 ---
 
-### 3. Get Profile by ID
+### Sorting
+
+| Parameter | Values                              |
+| --------- | ----------------------------------- |
+| sort_by   | age, created_at, gender_probability |
+| order     | asc, desc                           |
+
+#### Example
+
+```
+/api/profiles?sort_by=age&order=desc
+```
+
+---
+
+### Pagination
+
+| Parameter | Default     |
+| --------- | ----------- |
+| page      | 1           |
+| limit     | 10 (max 50) |
+
+#### Response Format
+
+```json
+{
+  "status": "success",
+  "page": 1,
+  "limit": 10,
+  "total": 2026,
+  "data": [ ... ]
+}
+```
+
+---
+
+### 3. Natural Language Search (Core Feature)
+
+**GET** `/api/profiles/search?q=...`
+
+#### Example
+
+```
+/api/profiles/search?q=young males from nigeria
+```
+
+#### Supported Patterns
+
+| Query                  | Interpreted As                                |
+| ---------------------- | --------------------------------------------- |
+| young males            | gender=male + age 16–24                       |
+| females above 30       | gender=female + min_age=30                    |
+| people from angola     | country_id=AO                                 |
+| adult males from kenya | gender=male + age_group=adult + country_id=KE |
+| teenagers above 17     | age_group=teenager + min_age=17               |
+
+#### Rules
+
+* Rule-based parsing only (no AI)
+* "young" = age 16–24 (not stored)
+* Must match at least one rule
+
+#### Error
+
+```json
+{
+  "status": "error",
+  "message": "Unable to interpret query"
+}
+```
+
+---
+
+### 4. Get Single Profile
 
 **GET** `/api/profiles/:id`
 
 ---
 
-### 4. Delete Profile
+### 5. Delete Profile
 
 **DELETE** `/api/profiles/:id`
 
@@ -156,7 +222,7 @@ Returns:
 
 ---
 
-## ❗ Error Handling
+##  Error Handling
 
 All errors follow this structure:
 
@@ -167,43 +233,48 @@ All errors follow this structure:
 }
 ```
 
-| Status Code | Description           |
-| ----------- | --------------------- |
-| 400         | Missing or empty name |
-| 422         | Invalid data type     |
-| 404         | Profile not found     |
-| 502         | External API failure  |
-| 500         | Internal server error |
+### Status Codes
+
+| Code | Meaning                 |
+| ---- | ----------------------- |
+| 400  | Missing/empty parameter |
+| 422  | Invalid parameter type  |
+| 404  | Profile not found       |
+| 502  | External API failure    |
+| 500  | Internal server error   |
 
 ---
 
-##  Business Logic
+## Query Validation
 
-#### Age Classification
+* All numeric fields validated (`page`, `limit`, `min_age`, etc.)
+* Invalid types return `422`
+* Invalid queries return:
 
-| Age Range | Group    |
-| --------- | -------- |
-| 0–12      | Child    |
-| 13–19     | Teenager |
-| 20–59     | Adult    |
-| 60+       | Senior   |
-
-#### Nationality Selection
-
-* Selects country with **highest probability**
+```json
+{
+  "status": "error",
+  "message": "Invalid query parameters"
+}
+```
 
 ---
 
-## Idempotency
+## Performance Considerations
 
-* The API prevents duplicate profiles
-* Same name returns existing record instead of creating a new one
+* Efficient SQL queries with:
+
+  * WHERE conditions
+  * LIMIT + OFFSET
+* Count query separated from data query
+* Avoids full-table scans where possible
+* Handles **2026+ records efficiently**
 
 ---
 
 ## CORS
 
-Enabled for all origins:
+Enabled globally:
 
 ```
 Access-Control-Allow-Origin: *
@@ -211,54 +282,52 @@ Access-Control-Allow-Origin: *
 
 ---
 
-## Testing
+## Time Format
 
-You can test using:
-* Postman
-* Thunder Client
-* cURL
+All timestamps are:
+
+```
+UTC ISO 8601
+```
 
 Example:
-```bash
-curl -X POST http://localhost:4000/api/profiles \
--H "Content-Type: application/json" \
--d '{"name": "john"}'
+
+```
+2026-04-01T12:00:00Z
 ```
 
 ---
 
-##  Deployment
+## Testing
 
-This project can be deployed on:
+Test endpoints using:
 
-* Railway (recommended)
-* Vercel (serverless adaptation required)
-* Heroku
-* AWS
-
----
-
-## Submission Details
-
-* API Base URL: https://your-app-domain.com
-* GitHub Repo: [https://github.com/Owaboye/Profile_Intelligence_API.git](https://github.com/Owaboye/Profile_Intelligence_API.git)
+* Postman
+* cURL
+* Browser
 
 ---
 
-# 👨‍💻 Author
+## Deployment
 
-Developed as part of Backend Wizards Assessment (Stage 1)
+Deployed on:
+
+* Railway 
+
+---
+
+## 👨‍💻Author
+
+**Ezekiel Oluwasanjo**
 
 ---
 
-# 🏁 Final Notes
+## Final Note
 
-This project demonstrates:
+This API is designed as a **foundation for real-world data intelligence systems**, focusing on:
 
-* Clean backend architecture
-* Proper API design
-* Real-world data processing
-* Robust error handling
-* Scalable coding practices
+* clean architecture
+* scalability
+* predictable query behavior
+* strict API contracts (important for automated grading)
 
----
