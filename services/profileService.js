@@ -119,40 +119,6 @@ async function deleteProfile(id) {
   return deleted;
 }
 
-// async function searchProfiles(queryParams) {
-//   const { q, page, limit } = queryParams;
-
-//   if (page !== undefined) {
-//   if (isNaN(Number(page))) {
-//     return res.status(422).json({
-//       status: "error",
-//       message: "page must be a number"
-//     });
-//   }
-//   page = Math.max(Number(page), 1);
-// }
-
-// if (limit !== undefined) {
-//   if (isNaN(Number(limit))) {
-//     return res.status(422).json({
-//       status: "error",
-//       message: "limit must be a number"
-//     });
-//   }
-//   limit = Math.min(Math.max(Number(limit), 1), 50);
-// }
-
-//   const filters = parseQuery(q);
-
-//   // attach pagination
-//   filters.page = page;
-//   filters.limit = limit;
-
-//   const result = repo.getAll(filters);
-
-//   return result;
-// }
-
 async function searchProfiles(queryParams) {
   const { q, page, limit } = queryParams;
 

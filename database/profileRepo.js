@@ -138,7 +138,7 @@ function findById(id) {
 
 function getAll(filters = {}) {
 
-  // ✅ FIX: correct SQL base
+  // FIX: correct SQL base
   let baseQuery = "FROM profiles WHERE 1=1";
   const params = [];
 
